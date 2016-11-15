@@ -76,12 +76,12 @@ def lloyd(xn,yn):
 pp = PdfPages('transforms.pdf')
 fig = plt.figure(1)
 
-ss = 4
+ss = 8
 immin = -1
 immax = 3.5
-npix = 31
+npix = 51
 rout = 72
-rin = 36 
+rin = 36
 
 image = np.array([ [10. if radius(i,j) < rout and radius(i,j) > rin else 0.0001 \
          for i in range(npix) ] for j in range(npix) ])
@@ -95,14 +95,13 @@ ax.set_xlabel('x')
 ax.set_ylabel('y')
 image_big = np.array([[image[i/10,j/10] for i in range(10*npix)] \
                      for j in range(10*npix)])
-ax = plt.contourf(X, Y, image_big, levels=np.arange(21)/20.*10, \
+ax = plt.contourf(X, Y, image_big, levels=[0,1,2,3,4,5,6,7,8,9,10], \
                   cmap=plt.cm.Reds)
 ax = plt.colorbar()
 for i in range(npix):
   ax = plt.plot([i,i],[0,npix],color='grey',lw=0.1)
 for i in range(npix):
   ax = plt.plot([0,npix],[i,i],color='grey',lw=0.1)
-
 
 
 
@@ -130,10 +129,7 @@ ax = plt.colorbar(im)
 
 
 # Make a weighted random trixel grid
-x = []
-y = []
-z = []
-
+x = [[],[],[]]
 for i in range(npix**2):
   flag=True
   while(flag):
@@ -143,23 +139,24 @@ for i in range(npix**2):
     if radius(ty,tx) < rout and radius(ty,tx) > rin:
         tz = 10.
     else:
-        tz = 0.0001
+        tz = 0.
 
     if radius(ty,tx) < (rout+0.2*rout) and radius(ty,tx) > (rin-0.2*rin):
         flag = False
     else:
-        if(np.random.uniform(0,1,1) < 5.e-2):
+        if(np.random.uniform(0,1,1) < 1.e-3):
             flag = False
 
-  x.append(tx)
-  y.append(ty)
-  z.append(tz)
+  x[0].append(tx)
+  x[1].append(ty)
+  x[2].append(tz)
 
 
 try:
-    cens,edg,tri,neig = lloyd(x,y)
+    cens,edg,tri,neig = lloyd(x[0],x[1])
 except:
-    cens,edg,tri,neig = triang.delaunay(x,y)
+    print "Qhull not found. Skipping lloyd smoothing."
+    cens,edg,tri,neig = triang.delaunay(x[0],x[1])
 
 
 ax = fig.add_subplot(223)
@@ -167,23 +164,22 @@ ax.set_xlim(0,npix)
 ax.set_ylim(0,npix)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
-ax = plt.tripcolor(x, y, tri, z, shading='flat', cmap=plt.cm.Reds)
+ax = plt.tripcolor(x[0], x[1], tri, x[2], shading='gouraud', cmap=plt.cm.Reds)
 ax = plt.colorbar()
-ax = plt.tripcolor(x, y, tri, z, shading='flat',alpha=0.5, \
+ax = plt.tripcolor(x[0], x[1], tri, x[2], shading='flat',alpha=0.5, \
      edgecolors='black', lw=0.1, cmap=plt.cm.Reds)
 
 
-
 FILE = open("temp_out","w")
-FILE.write(str(len(x))+"\n")
+FILE.write(str(len(x[0]))+"\n")
 FILE.write(str(tri.size/3)+"\n")
 FILE.write(str(npix*ss)+"\n")
-for i in range(len(x)):
-      FILE.write(str(x[i])+"\n")
-for i in range(len(x)):
-      FILE.write(str(y[i])+"\n")
-for i in range(len(x)):
-      FILE.write(str(z[i])+"\n")
+for i in range(len(x[0])):
+      FILE.write(str(x[0][i])+"\n")
+for i in range(len(x[0])):
+      FILE.write(str(x[1][i])+"\n")
+for i in range(len(x[0])):
+      FILE.write(str(x[2][i])+"\n")
 for i in range(tri.size/3):
   for j in range(3):
       FILE.write(str(tri[i,j])+"\n")
